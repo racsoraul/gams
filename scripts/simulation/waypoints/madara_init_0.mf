@@ -1,5 +1,7 @@
 .vrep_port=19906;
 
+.platform="multirotor";
+
 .initial_lat=40.443222;
 .initial_lon=-79.940334;
 .initial_alt=4;

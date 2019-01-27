@@ -1,6 +1,8 @@
 use strict;
 package simulation;
 
+my $airsim = $ENV{"AIRSIM_ROOT"};
+
 # empty string to represent not set
 my $term_prefix = $ENV{"GAMS_TERM_PREFIX"};
 my $term_suffix = $ENV{"GAMS_TERM_SUFFIX"};
@@ -22,12 +24,12 @@ sub run {
     for (my $i=0; $i < $num; $i++)
     {
       my $cmd = "\"";
-      #$cmd = "$cmd gdb ";
+      $cmd = "$cmd gdb ";
       #$cmd = "$cmd -ex \\\"set breakpoint pending on\\\" ";
-      #$cmd = "$cmd -ex run --args ";
+      $cmd = "$cmd -ex run --args ";
 	  
 
-      $cmd = "$cmd $gams_root/bin/gams_controller -i $i -n $num --loop-time $time --period $period --queue-length 2000000";
+      $cmd = "$cmd $airsim/build_debug/output/bin/MultiAgent -i $i -n $num --loop-time $time --period $period --queue-length 2000000";
       $cmd = "$cmd --madara-file $gams_root/scripts/simulation/madara_init_common.mf";
       $cmd = "$cmd $gams_root/scripts/simulation/areas/$area.mf";
       $cmd = "$cmd $gams_root/scripts/simulation/$sim/madara_init_common.mf";
@@ -54,7 +56,7 @@ sub run {
       }
       elsif ($osname eq "linux") # linux default
       {
-        system("xterm -hold -e $cmd &");
+        system("xterm -geometry 200x100+0+900 -hold -e $cmd &");
       }
       elsif ($osname eq "darwin") # Mac OS X default
       {

@@ -1,7 +1,7 @@
 use strict;
 package simulation;
 
-my $airsim = $ENV{"AIRSIM_ROOT"};
+my $sim_root = $ENV{"SIM_ROOT"};
 
 # empty string to represent not set
 my $term_prefix = $ENV{"GAMS_TERM_PREFIX"};
@@ -29,7 +29,7 @@ sub run {
       $cmd = "$cmd -ex run --args ";
 	  
 
-      $cmd = "$cmd $airsim/build_debug/output/bin/MultiAgent -i $i -n $num --loop-time $time --period $period --queue-length 2000000";
+      $cmd = "$cmd $sim_root/multiagent/multiagent -i $i -n $num --loop-time $time --period $period --queue-length 2000000";
       $cmd = "$cmd --madara-file $gams_root/scripts/simulation/madara_init_common.mf";
       $cmd = "$cmd $gams_root/scripts/simulation/areas/$area.mf";
       $cmd = "$cmd $gams_root/scripts/simulation/$sim/madara_init_common.mf";

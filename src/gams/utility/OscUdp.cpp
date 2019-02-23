@@ -12,86 +12,38 @@
  **/
 
 #include "OscUdp.h"
+#include "oscpack/osc/OscOutboundPacketStream.h"
+#include "oscpack/ip/UdpSocket.h"
 
 size_t
-gams::utility::OscUdp::pack (void* buffer, size_t size, const OscMap& map)
+gams::utility::OscUdp::pack (osc::OutboundPacketStream bundle, size_t output_buffer_size, const OscMap& map)
 {
-  size_t result = 0;
+  bundle << osc::BeginBundle();
 
-  for (auto i : map)
+  for(auto i : map)
   {
-    // @Alex Rozgo. Here is where the OSC pack magic should happen
-    // map is a STL map of string->vector<double>. We just have to
-    // pack according to the types. I've left scaffolding in here for
-    // checking the message addresses by their ending. Feel free to
-    // do what you feel is necessary
-
-    // velocity changes are arrays of floats
     if (
-      madara::utility::ends_with (i.first, "/velocity/xy") ||
-      madara::utility::ends_with (i.first, "/velocity/z") ||
-      madara::utility::ends_with (i.first, "/yaw")
-    )
-    {
-
-    }
-    // rotation and position are streams of floats
-    else if (
-      madara::utility::ends_with (i.first, "/pos") ||
-      madara::utility::ends_with (i.first, "/rot"))
-    {
-
+        madara::utility::ends_with (i.first, "/velocity/xy") ||
+        madara::utility::ends_with (i.first, "/velocity/z") ||
+        madara::utility::ends_with (i.first, "/yaw")
+      ) {
+      bundle << osc::BeginMessage(i.first.c_str)
+        << i.second[0] << i.second[1]
+        << osc::EndMessage;
     }
   }
 
-  // return the size written
-  return result;
+  bundle << osc::EndBundle;
+  
+  return bundle.Size();
 }
 
 
 void
-gams::utility::OscUdp::unpack (void* buffer, size_t size, OscMap & map)
+gams::utility::OscUdp::unpack (char* buffer, size_t size, OscMap & map)
 {
   // @Alex Rozgo. I've removed all of this and changed the function signature
   // to be more generic
-}
-
-/**
- * Creates and configures the underlying transport
- * @param config   the configuration of the network. For UDP,
- *                 make sure type is UDP and you have at least
- *                 two hosts setup: [0] local_ip:port, [1] server:port
- **/
-void
-gams::utility::OscUdp::create_socket (
-  madara::transport::QoSTransportSettings& settings)
-{
-  settings_ = settings;
-
-  // disable read thread settings
-  settings_.no_receiving = true;
-
-  // we're not implementing fragmentation right now
-  settings_.queue_length = 64000;
-
-  if (settings.type == madara::transport::UDP)
-  {
-    transport_ =
-      std::make_shared<madara::transport::UdpTransport>(
-        "", kb_.get_context(), settings_, true);
-  }
-  else if (settings.type == madara::transport::MULTICAST)
-  {
-    transport_ =
-      std::make_shared<madara::transport::MulticastTransport>(
-        "", kb_.get_context(), settings_, true);
-  }
-  else if (settings.type == madara::transport::BROADCAST)
-  {
-    transport_ =
-      std::make_shared<madara::transport::BroadcastTransport>(
-        "", kb_.get_context(), settings_, true);
-  }
 }
 
 int
@@ -133,27 +85,19 @@ gams::utility::OscUdp::receive (OscMap & values, double max_wait_seconds)
   return result;
 }
 
+#define ADDRESS "127.0.0.1"
+#define PORT 5555
+#define OUTPUT_BUFFER_SIZE 1024
+
 int
 gams::utility::OscUdp::send (const OscMap & values)
 {
-  int result = 0;
-  std::string remote;
-  size_t max_send = 64000;
-  size_t packed_bytes;
+  UdpTransmitSocket transmitSocket(IpEndpointName(ADDRESS, PORT));
 
-  if (has_socket())
-  {
-    const std::vector<boost::asio::ip::udp::endpoint> & addresses =
-      transport_->get_udp_endpoints();
+  char buffer[OUTPUT_BUFFER_SIZE];
+  osc::OutboundPacketStream bundle(buffer, OUTPUT_BUFFER_SIZE);
+  
+  pack(bundle, OUTPUT_BUFFER_SIZE, values);
 
-    packed_bytes = pack(buffer_.get(), max_send, values);
-
-    for (size_t i = 1; i < addresses.size(); ++i)
-    {
-      result = transport_->send_buffer(
-        addresses[i], buffer_.get(), packed_bytes);
-    }
-  }
-
-  return result;
+  transmitSocket.Send(bundle.Data(), bundle.Size());
 }

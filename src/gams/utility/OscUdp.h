@@ -28,6 +28,8 @@
 #include "gams/GamsExport.h"
 #include "gams/loggers/GlobalLogger.h"
 
+#include "oscpack/osc/OscOutboundPacketStream.h"
+
 namespace gams
 {
   namespace utility
@@ -68,7 +70,7 @@ namespace gams
          * @param size     the size of the buffer
          * @param map      a map updated with recent messages
          **/
-        size_t pack (void* buffer, size_t size, const OscMap& map);
+        size_t pack (osc::OutboundPacketStream bundle, size_t size, const OscMap& map);
 
         /**
          * Processes OSC packets and places them into an OSC map
@@ -76,7 +78,7 @@ namespace gams
          * @param size     the size of the buffer
          * @param map      a map updated with recent messages
          **/
-        void unpack (void* buffer, size_t size, OscMap & map);
+        void unpack (char* buffer, size_t size, OscMap & map);
 
         /**
          * Returns if the UDP-based socket has been created properly
